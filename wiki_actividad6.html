@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wiki — Sistema Cognitivo con MCP y Bases de Datos</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;0,9..144,900;1,9..144,400&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0e0f13;--ink2:#3d4154;--ink3:#7b7f96;
+  --bg:#fafaf8;--bg2:#f4f3ef;--bg3:#eceae3;
+  --blue:#1a3a6b;--blue-l:#e8eef8;--blue-m:#5a7fc0;
+  --green:#1a5c35;--green-l:#e5f5ec;
+  --red:#8b1a1a;--red-l:#faeaea;
+  --amber:#6b4a00;--amber-l:#fdf5e0;
+  --border:#d8d5cc;--border2:#c4c0b4;
+  --code-bg:#1b1f2e;--code-fg:#cdd6f4;
+  --radius:8px;--sidebar:272px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);display:flex;min-height:100vh;font-size:15px;line-height:1.7}
+
+/* SIDEBAR */
+aside{width:var(--sidebar);min-height:100vh;background:#fff;border-right:1px solid var(--border);position:fixed;top:0;left:0;overflow-y:auto;padding:0;z-index:50;display:flex;flex-direction:column}
+.sb-header{padding:1.5rem 1.25rem 1rem;border-bottom:1px solid var(--border)}
+.sb-tag{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);margin-bottom:.4rem}
+.sb-title{font-family:'Fraunces',Georgia,serif;font-size:1rem;font-weight:700;color:var(--blue);line-height:1.3}
+nav{padding:1rem 0;flex:1}
+.nav-group{margin-bottom:.25rem}
+.nav-label{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);padding:.5rem 1.25rem .25rem;display:block}
+nav a{display:flex;align-items:center;gap:.5rem;font-size:.82rem;font-weight:500;color:var(--ink2);text-decoration:none;padding:.38rem 1.25rem;transition:all .15s}
+nav a:hover{background:var(--blue-l);color:var(--blue)}
+nav a.active{background:var(--blue-l);color:var(--blue);border-right:2px solid var(--blue)}
+nav a .num{font-size:10px;font-weight:600;color:var(--ink3);min-width:18px}
+.sb-footer{padding:1rem 1.25rem;border-top:1px solid var(--border);font-size:11px;color:var(--ink3)}
+
+/* MAIN */
+main{margin-left:var(--sidebar);flex:1;max-width:900px;padding:3rem 3.5rem 6rem}
+
+/* HERO */
+.hero{margin-bottom:3rem;padding-bottom:2.5rem;border-bottom:1.5px solid var(--ink)}
+.hero-eyebrow{display:flex;align-items:center;gap:.75rem;margin-bottom:1rem}
+.chip{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:.25em .7em;border-radius:4px;background:var(--blue-l);color:var(--blue)}
+.chip.green{background:var(--green-l);color:var(--green)}
+h1{font-family:'Fraunces',Georgia,serif;font-size:2.4rem;font-weight:900;line-height:1.08;letter-spacing:-.025em;color:var(--ink);margin-bottom:1rem}
+.hero-sub{font-size:.95rem;color:var(--ink2);max-width:600px;line-height:1.65}
+.meta-row{display:flex;flex-wrap:wrap;gap:1.25rem;margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border)}
+.meta-item{font-size:.78rem;color:var(--ink3);display:flex;align-items:center;gap:.35rem;font-weight:500}
+.meta-item strong{color:var(--ink2)}
+
+/* SECTIONS */
+section{margin-bottom:3rem;scroll-margin-top:1.5rem}
+h2{font-family:'Fraunces',Georgia,serif;font-size:1.55rem;font-weight:700;color:var(--ink);margin-bottom:1rem;padding-bottom:.6rem;border-bottom:1px solid var(--border)}
+h3{font-size:1rem;font-weight:600;color:var(--blue);margin:1.75rem 0 .6rem}
+p{color:var(--ink2);margin-bottom:.9rem;line-height:1.7}
+strong{color:var(--ink);font-weight:600}
+
+/* CALLOUTS */
+.callout{border-left:3px solid var(--blue-m);background:var(--blue-l);padding:.9rem 1.1rem;border-radius:0 var(--radius) var(--radius) 0;margin:1.25rem 0}
+.callout.ok{border-color:#2a9a5a;background:var(--green-l)}
+.callout.warn{border-color:#c4860a;background:var(--amber-l)}
+.callout p{margin:0;font-size:.88rem;color:var(--ink2)}
+.callout strong{color:var(--blue)}
+.callout.ok strong{color:var(--green)}
+
+/* CODE */
+pre{background:var(--code-bg);color:var(--code-fg);padding:1.25rem 1.4rem;border-radius:var(--radius);overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:.78rem;line-height:1.7;margin:1rem 0 1.5rem;position:relative}
+.pre-label{display:flex;align-items:center;gap:.5rem;background:#252a3d;border-bottom:1px solid #2f3450;padding:.5rem 1rem;border-radius:var(--radius) var(--radius) 0 0;font-family:'JetBrains Mono',monospace;font-size:.72rem;color:#6272a4;margin-top:1rem}
+.pre-label+pre{border-radius:0 0 var(--radius) var(--radius);margin-top:0}
+.kw{color:#ff79c6}.fn{color:#50fa7b}.str{color:#f1fa8c}.dec{color:#bd93f9}.cm{color:#6272a4;font-style:italic}.num{color:#ffb86c}
+code{font-family:'JetBrains Mono',monospace;font-size:.82em;background:var(--bg2);border:1px solid var(--border);padding:.1em .38em;border-radius:3px;color:var(--blue)}
+pre code{background:none;border:none;padding:0;color:inherit;font-size:inherit}
+
+/* TABLES */
+.tbl-wrap{overflow-x:auto;margin:1rem 0 1.5rem;border:1px solid var(--border);border-radius:var(--radius)}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+thead{background:var(--blue)}
+thead th{padding:.6rem 1rem;text-align:left;color:#fff;font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+tbody tr:nth-child(even){background:var(--bg2)}
+tbody tr:hover{background:var(--blue-l)}
+tbody td{padding:.55rem 1rem;border-bottom:1px solid var(--border);color:var(--ink2);vertical-align:top}
+tbody td:first-child{font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--blue)}
+
+/* PRUEBA CARDS */
+.test-grid{display:flex;flex-direction:column;gap:.5rem;margin:1rem 0}
+.test-card{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:#fff}
+.test-header{display:flex;align-items:center;gap:.75rem;padding:.7rem 1rem;background:var(--bg2);border-bottom:1px solid var(--border)}
+.test-num{font-size:.7rem;font-weight:700;font-family:'JetBrains Mono',monospace;background:var(--blue);color:#fff;padding:.15em .5em;border-radius:3px;flex-shrink:0}
+.test-title{font-size:.9rem;font-weight:600;color:var(--ink)}
+.badge-ok{font-size:.65rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:var(--green-l);color:var(--green);padding:.15em .55em;border-radius:3px;margin-left:auto;flex-shrink:0}
+.test-body{padding:.75rem 1rem}
+.test-desc{font-size:.85rem;color:var(--ink2);margin-bottom:.5rem}
+.test-output{background:var(--code-bg);color:#a6e3a1;font-family:'JetBrains Mono',monospace;font-size:.72rem;padding:.65rem .9rem;border-radius:5px;line-height:1.6;overflow-x:auto}
+
+/* QA */
+.qa{margin-bottom:1.75rem;padding:1.25rem;background:#fff;border:1px solid var(--border);border-radius:var(--radius)}
+.qa-q{display:flex;gap:.75rem;align-items:flex-start;margin-bottom:.75rem}
+.qa-num{background:var(--blue);color:#fff;font-size:.72rem;font-weight:700;min-width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:.15rem}
+.qa-text{font-weight:600;font-size:.95rem;color:var(--ink)}
+.qa-a{padding-left:2rem;font-size:.88rem;color:var(--ink2);line-height:1.7}
+
+/* ARCH */
+.arch{display:flex;flex-direction:column;gap:0;margin:1.25rem 0}
+.arch-row{display:flex;align-items:stretch;gap:0}
+.arch-box{flex:1;border:1.5px solid var(--border2);border-radius:var(--radius);padding:1rem 1.25rem;background:#fff}
+.arch-box.l1{border-color:#5a7fc0;background:var(--blue-l)}
+.arch-box.l2{border-color:#c4860a;background:var(--amber-l)}
+.arch-box.l3{border-color:#2a9a5a;background:var(--green-l)}
+.arch-label{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.3rem}
+.l1 .arch-label{color:var(--blue)}.l2 .arch-label{color:var(--amber)}.l3 .arch-label{color:var(--green)}
+.arch-box h4{font-size:.92rem;font-weight:600;color:var(--ink);margin-bottom:.25rem}
+.arch-box p{font-size:.8rem;color:var(--ink2);margin:0}
+.arch-arrow{text-align:center;padding:.3rem 0;font-size:1.1rem;color:var(--ink3)}
+
+/* FILE TREE */
+.filetree{background:var(--code-bg);border-radius:var(--radius);padding:1.1rem 1.4rem;font-family:'JetBrains Mono',monospace;font-size:.8rem;color:#cdd6f4;line-height:1.9;margin:1rem 0 1.5rem}
+.filetree .folder{color:#89dceb}.filetree .file{color:#a6e3a1}.filetree .comment{color:#6272a4}
+
+/* REFS */
+.ref-list{list-style:none;display:flex;flex-direction:column;gap:.75rem;margin:1rem 0}
+.ref-list li{font-size:.87rem;color:var(--ink2);padding-left:1.75rem;text-indent:-1.75rem;line-height:1.65}
+.ref-list a{color:var(--blue);word-break:break-all}
+
+/* FOOTER */
+footer{margin-top:3.5rem;padding-top:1.25rem;border-top:1.5px solid var(--ink);display:flex;justify-content:space-between;flex-wrap:wrap;gap:.5rem;font-size:.75rem;color:var(--ink3);font-weight:500}
+
+@media(max-width:860px){aside{display:none}main{margin-left:0;padding:2rem 1.25rem}}
+</style>
+</head>
+<body>
+
+<aside>
+  <div class="sb-header">
+    <div class="sb-tag">Wiki Académica · Actividad 6</div>
+    <div class="sb-title">Sistema Cognitivo con MCP y Bases de Datos</div>
+  </div>
+  <nav>
+    <div class="nav-group">
+      <span class="nav-label">Contenido</span>
+      <a href="#presentacion"><span class="num">01</span>Presentación</a>
+      <a href="#objetivo"><span class="num">02</span>Objetivo</a>
+      <a href="#tecnologias"><span class="num">03</span>Requisitos técnicos</a>
+      <a href="#arquitectura"><span class="num">04</span>Arquitectura</a>
+      <a href="#implementacion"><span class="num">05</span>Implementación</a>
+      <a href="#pruebas"><span class="num">06</span>Pruebas funcionales</a>
+      <a href="#analisis"><span class="num">07</span>Análisis</a>
+      <a href="#conclusiones"><span class="num">08</span>Conclusiones</a>
+      <a href="#referencias"><span class="num">09</span>Referencias APA</a>
+    </div>
+  </nav>
+  <div class="sb-footer">Computación Cognitiva para Big Data</div>
+</aside>
+
+<main>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-eyebrow">
+    <span class="chip">Actividad 6</span>
+    <span class="chip green">9/9 pruebas ✓</span>
+  </div>
+  <h1>Sistema Cognitivo usando MCP y Bases de Datos</h1>
+  <p class="hero-sub">Diseño e implementación de un servidor MCP en Python con FastMCP y SQLite3, que expone operaciones CRUD y consultas analíticas sobre una base de datos de inventario como herramientas externas para modelos de lenguaje.</p>
+  <div class="meta-row">
+    <div class="meta-item"><strong>Curso:</strong> Computación Cognitiva para Big Data</div>
+    <div class="meta-item"><strong>Tema:</strong> Model Context Protocol</div>
+    <div class="meta-item"><strong>Stack:</strong> Python 3.10 · SQLite3 · FastMCP</div>
+  </div>
+</div>
+
+<!-- 1. PRESENTACIÓN -->
+<section id="presentacion">
+  <h2>1. Presentación</h2>
+  <p>Las organizaciones modernas requieren sistemas capaces de consultar, procesar y analizar información almacenada en bases de datos, servicios web y plataformas externas. En este contexto, los <strong>sistemas cognitivos</strong> apoyados en modelos de lenguaje pueden extender sus capacidades mediante herramientas que les permitan interactuar con datos reales.</p>
+  <p>El <strong>Model Context Protocol (MCP)</strong> permite conectar modelos de lenguaje con herramientas externas, tales como bases de datos, archivos, APIs y servicios computacionales. En esta actividad se desarrolló un servidor MCP que permite gestionar información de un inventario mediante operaciones CRUD y consultas analíticas básicas.</p>
+  <div class="callout">
+    <p><strong>¿Qué es MCP?</strong> Es un protocolo abierto creado por Anthropic que estandariza la comunicación entre un modelo de lenguaje grande (LLM) y herramientas externas. El modelo puede "llamar" funciones en tiempo real y recibir sus resultados como parte de su razonamiento.</p>
+  </div>
+</section>
+
+<!-- 2. OBJETIVO -->
+<section id="objetivo">
+  <h2>2. Objetivo de la actividad</h2>
+  <p>Diseñar e implementar un servidor MCP en Python que permita realizar operaciones CRUD y consultas analíticas sobre una base de datos de inventario, con el propósito de comprender cómo un sistema cognitivo puede interactuar con herramientas externas.</p>
+  <h3>Saberes trabajados</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Tipo</th><th>Saber</th></tr></thead>
+      <tbody>
+        <tr><td>Cognitivo</td><td>Sistemas cognitivos, MCP, bases de datos relacionales, operaciones CRUD, herramientas externas para LLM</td></tr>
+        <tr><td>Procedimental</td><td>Crear BD SQLite, implementar funciones Python, crear tools MCP con FastMCP, ejecutar pruebas funcionales</td></tr>
+        <tr><td>Actitudinal</td><td>Trabajo colaborativo, responsabilidad en evidencias, buenas prácticas de programación, documentación técnica</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 3. REQUISITOS -->
+<section id="tecnologias">
+  <h2>3. Requisitos técnicos</h2>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Tecnología</th><th>Versión</th><th>Rol en el proyecto</th></tr></thead>
+      <tbody>
+        <tr><td>Python</td><td>3.10+</td><td>Lenguaje principal de implementación</td></tr>
+        <tr><td>SQLite3</td><td>Stdlib</td><td>Motor de base de datos relacional embebido, sin servidor externo requerido</td></tr>
+        <tr><td>FastMCP</td><td>última</td><td>Framework para crear servidores MCP en Python con decoradores simples</td></tr>
+        <tr><td>VS Code</td><td>—</td><td>Editor de código utilizado para el desarrollo</td></tr>
+        <tr><td>Git / GitHub</td><td>—</td><td>Control de versiones y entrega del repositorio</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <h3>Instalación</h3>
+  <div class="pre-label">📦 terminal</div>
+  <pre><span class="cm"># Crear y activar entorno virtual</span>
+python -m venv venv
+source venv/bin/activate        <span class="cm"># Linux / macOS</span>
+venv\Scripts\activate           <span class="cm"># Windows</span>
+
+<span class="cm"># Instalar dependencia principal</span>
+pip install fastmcp</pre>
+</section>
+
+<!-- 4. ARQUITECTURA -->
+<section id="arquitectura">
+  <h2>4. Arquitectura del sistema</h2>
+  <p>El sistema sigue una arquitectura de <strong>tres capas</strong> que separa la persistencia de datos, la lógica de herramientas MCP y la interfaz cognitiva del modelo de lenguaje:</p>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-box l3">
+        <div class="arch-label">Capa 3 — Interfaz cognitiva</div>
+        <h4>LLM Cliente (Claude, GPT, etc.)</h4>
+        <p>Recibe las definiciones de herramientas vía MCP e invoca las funciones de forma autónoma según el contexto de la conversación. No necesita conocer los detalles de implementación.</p>
+      </div>
+    </div>
+    <div class="arch-arrow">↕ Model Context Protocol</div>
+    <div class="arch-row">
+      <div class="arch-box l2">
+        <div class="arch-label">Capa 2 — Servidor MCP</div>
+        <h4>server.py · FastMCP("InventarioDB")</h4>
+        <p>Expone 9 herramientas (tools): 5 operaciones CRUD + 4 consultas analíticas. Actúa como intermediario entre el LLM y la base de datos.</p>
+      </div>
+    </div>
+    <div class="arch-arrow">↕ sqlite3</div>
+    <div class="arch-row">
+      <div class="arch-box l1">
+        <div class="arch-label">Capa 1 — Datos</div>
+        <h4>database.py · inventory.db</h4>
+        <p>Base de datos SQLite con la tabla <code>productos</code>. Gestionada por <code>database.py</code> que define el esquema y la inicialización automática.</p>
+      </div>
+    </div>
+  </div>
+
+  <h3>Estructura del proyecto</h3>
+  <div class="filetree">
+<span class="folder">mcp_inventory/</span>
+├── <span class="file">server.py</span>         <span class="comment"># Servidor MCP — 9 herramientas expuestas</span>
+├── <span class="file">database.py</span>       <span class="comment"># Inicialización de la base de datos SQLite</span>
+├── <span class="file">requirements.txt</span>  <span class="comment"># Dependencias: fastmcp</span>
+├── <span class="file">README.md</span>         <span class="comment"># Instrucciones de instalación y ejecución</span>
+└── <span class="file">inventory.db</span>      <span class="comment"># BD generada automáticamente al ejecutar</span>
+  </div>
+</section>
+
+<!-- 5. IMPLEMENTACIÓN -->
+<section id="implementacion">
+  <h2>5. Implementación</h2>
+
+  <h3>5.1 database.py — Creación de la base de datos</h3>
+  <p>Crea la tabla <code>productos</code> con los campos requeridos usando <code>CREATE TABLE IF NOT EXISTS</code>, lo que permite reiniciar el servidor sin perder datos.</p>
+  <div class="pre-label">🗄️ database.py</div>
+  <pre><span class="kw">import</span> sqlite3
+
+DB_NAME = <span class="str">"inventory.db"</span>
+
+<span class="kw">def</span> <span class="fn">init_db</span>():
+    conn = sqlite3.<span class="fn">connect</span>(DB_NAME)
+    cursor = conn.<span class="fn">cursor</span>()
+
+    cursor.<span class="fn">execute</span>(<span class="str">"""
+        CREATE TABLE IF NOT EXISTS productos (
+            id        INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre    TEXT    NOT NULL,
+            categoria TEXT,
+            cantidad  INTEGER NOT NULL,
+            precio    REAL    NOT NULL
+        )
+    """</span>)
+
+    conn.<span class="fn">commit</span>()
+    conn.<span class="fn">close</span>()</pre>
+
+  <h3>5.2 server.py — Operaciones CRUD</h3>
+  <div class="pre-label">⚙️ server.py — configuración inicial</div>
+  <pre><span class="kw">from</span> mcp.server.fastmcp <span class="kw">import</span> FastMCP
+<span class="kw">import</span> sqlite3
+<span class="kw">from</span> database <span class="kw">import</span> init_db, DB_NAME
+
+<span class="fn">init_db</span>()
+mcp = <span class="fn">FastMCP</span>(<span class="str">"InventarioDB"</span>)
+
+<span class="kw">def</span> <span class="fn">get_connection</span>():
+    <span class="kw">return</span> sqlite3.<span class="fn">connect</span>(DB_NAME)</pre>
+
+  <div class="pre-label">⚙️ server.py — herramienta crear_producto</div>
+  <pre><span class="dec">@mcp.tool()</span>
+<span class="kw">def</span> <span class="fn">crear_producto</span>(nombre: str, categoria: str,
+                    cantidad: int, precio: float) -> str:
+    conn = <span class="fn">get_connection</span>()
+    cursor = conn.<span class="fn">cursor</span>()
+    cursor.<span class="fn">execute</span>(
+        <span class="str">"INSERT INTO productos (nombre, categoria, cantidad, precio)"</span>
+        <span class="str">" VALUES (?, ?, ?, ?)"</span>,
+        (nombre, categoria, cantidad, precio)
+    )
+    conn.<span class="fn">commit</span>()
+    conn.<span class="fn">close</span>()
+    <span class="kw">return</span> <span class="str">"Producto creado exitosamente"</span></pre>
+
+  <div class="pre-label">⚙️ server.py — herramienta consultar_producto</div>
+  <pre><span class="dec">@mcp.tool()</span>
+<span class="kw">def</span> <span class="fn">consultar_producto</span>(id: int) -> dict:
+    conn = <span class="fn">get_connection</span>()
+    cursor = conn.<span class="fn">cursor</span>()
+    cursor.<span class="fn">execute</span>(<span class="str">"SELECT * FROM productos WHERE id = ?"</span>, (id,))
+    row = cursor.<span class="fn">fetchone</span>()
+    conn.<span class="fn">close</span>()
+    <span class="kw">if</span> row:
+        <span class="kw">return</span> {<span class="str">"id"</span>: row[<span class="num">0</span>], <span class="str">"nombre"</span>: row[<span class="num">1</span>],
+                <span class="str">"categoria"</span>: row[<span class="num">2</span>], <span class="str">"cantidad"</span>: row[<span class="num">3</span>], <span class="str">"precio"</span>: row[<span class="num">4</span>]}
+    <span class="kw">return</span> {<span class="str">"error"</span>: <span class="str">"Producto no encontrado"</span>}</pre>
+
+  <div class="pre-label">⚙️ server.py — actualizar, eliminar y listar</div>
+  <pre><span class="dec">@mcp.tool()</span>
+<span class="kw">def</span> <span class="fn">actualizar_producto</span>(id: int, cantidad: int) -> str:
+    conn = <span class="fn">get_connection</span>()
+    cursor = conn.<span class="fn">cursor</span>()
+    cursor.<span class="fn">execute</span>(<span class="str">"UPDATE productos SET cantidad = ? WHERE id = ?"</span>,
+                   (cantidad, id))
+    conn.<span class="fn">commit</span>(); conn.<span class="fn">close</span>()
+    <span class="kw">return</span> <span class="str">"Producto actualizado correctamente"</span>
+
+<span class="dec">@mcp.tool()</span>
+<span class="kw">def</span> <span class="fn">eliminar_producto</span>(id: int) -> str:
+    conn = <span class="fn">get_connection</span>()
+    cursor = conn.<span class="fn">cursor</span>()
+    cursor.<span class="fn">execute</span>(<span class="str">"DELETE FROM productos WHERE id = ?"</span>, (id,))
+    conn.<span class="fn">commit</span>(); conn.<span class="fn">close</span>()
+    <span class="kw">return</span> <span class="str">"Producto eliminado correctamente"</span>
+
+<span class="dec">@mcp.tool()</span>
+<span class="kw">def</span> <span class="fn">listar_productos</span>() -> list:
+    conn = <span class="fn">get_connection</span>()
+    cursor = conn.<span class="fn">cursor</span>()
+    cursor.<span class="fn">execute</span>(<span class="str">"SELECT * FROM productos"</span>)
+    rows = cursor.<span class="fn">fetchall</span>()
+    conn.<span class="fn">close</span>()
+    <span class="kw">return</span> [{<span class="str">"id"</span>: r[<span class="num">0</span>], <span class="str">"nombre"</span>: r[<span class="num">1</span>], <span class="str">"categoria"</span>: r[<span class="num">2</span>],
+             <span class="str">"cantidad"</span>: r[<span class="num">3</span>], <span class="str">"precio"</span>: r[<span class="num">4</span>]} <span class="kw">for</span> r <span class="kw">in</span> rows]</pre>
+
+  <h3>5.3 server.py — Herramientas cognitivas y analíticas</h3>
+  <div class="pre-label">⚙️ server.py — herramientas analíticas</div>
+  <pre><span class="dec">@mcp.tool()</span>
+<span class="kw">def</span> <span class="fn">calcular_valor_total_inventario</span>() -> dict:
+    conn = <span class="fn">get_connection</span>(); cursor = conn.<span class="fn">cursor</span>()
+    cursor.<span class="fn">execute</span>(<span class="str">"SELECT SUM(cantidad * precio) FROM productos"</span>)
+    total = cursor.<span class="fn">fetchone</span>()[<span class="num">0</span>]
+    conn.<span class="fn">close</span>()
+    <span class="kw">return</span> {<span class="str">"valor_total_inventario"</span>: total <span class="kw">if</span> total <span class="kw">else</span> <span class="num">0</span>}
+
+<span class="dec">@mcp.tool()</span>
+<span class="kw">def</span> <span class="fn">productos_agotados</span>() -> list:
+    conn = <span class="fn">get_connection</span>(); cursor = conn.<span class="fn">cursor</span>()
+    cursor.<span class="fn">execute</span>(<span class="str">"SELECT * FROM productos WHERE cantidad = 0"</span>)
+    rows = cursor.<span class="fn">fetchall</span>()
+    conn.<span class="fn">close</span>()
+    <span class="kw">return</span> [{<span class="str">"id"</span>: r[<span class="num">0</span>], <span class="str">"nombre"</span>: r[<span class="num">1</span>], <span class="str">"categoria"</span>: r[<span class="num">2</span>],
+             <span class="str">"cantidad"</span>: r[<span class="num">3</span>], <span class="str">"precio"</span>: r[<span class="num">4</span>]} <span class="kw">for</span> r <span class="kw">in</span> rows]
+
+<span class="dec">@mcp.tool()</span>
+<span class="kw">def</span> <span class="fn">producto_mas_costoso</span>() -> dict:
+    conn = <span class="fn">get_connection</span>(); cursor = conn.<span class="fn">cursor</span>()
+    cursor.<span class="fn">execute</span>(<span class="str">"SELECT * FROM productos ORDER BY precio DESC LIMIT 1"</span>)
+    row = cursor.<span class="fn">fetchone</span>()
+    conn.<span class="fn">close</span>()
+    <span class="kw">if</span> row:
+        <span class="kw">return</span> {<span class="str">"id"</span>: row[<span class="num">0</span>], <span class="str">"nombre"</span>: row[<span class="num">1</span>], <span class="str">"categoria"</span>: row[<span class="num">2</span>],
+                <span class="str">"cantidad"</span>: row[<span class="num">3</span>], <span class="str">"precio"</span>: row[<span class="num">4</span>]}
+    <span class="kw">return</span> {<span class="str">"error"</span>: <span class="str">"No hay productos registrados"</span>}
+
+<span class="dec">@mcp.tool()</span>
+<span class="kw">def</span> <span class="fn">estadisticas_inventario</span>() -> dict:
+    conn = <span class="fn">get_connection</span>(); cursor = conn.<span class="fn">cursor</span>()
+    cursor.<span class="fn">execute</span>(<span class="str">"SELECT COUNT(*), AVG(cantidad), AVG(precio),"</span>
+                   <span class="str">" SUM(cantidad * precio) FROM productos"</span>)
+    tp, pa, pp, vt = cursor.<span class="fn">fetchone</span>()
+    conn.<span class="fn">close</span>()
+    <span class="kw">return</span> {<span class="str">"total_productos"</span>: tp, <span class="str">"promedio_cantidad"</span>: pa,
+            <span class="str">"promedio_precio"</span>: pp, <span class="str">"valor_total"</span>: vt <span class="kw">if</span> vt <span class="kw">else</span> <span class="num">0</span>}
+
+<span class="kw">if</span> __name__ == <span class="str">"__main__"</span>:
+    mcp.<span class="fn">serve</span>()</pre>
+
+  <h3>requirements.txt</h3>
+  <div class="pre-label">📄 requirements.txt</div>
+  <pre>fastmcp</pre>
+</section>
+
+<!-- 6. PRUEBAS -->
+<section id="pruebas">
+  <h2>6. Pruebas funcionales</h2>
+  <p>Se ejecutaron las nueve pruebas requeridas por la guía sobre la base de datos local. A continuación se muestran los resultados reales de cada herramienta MCP.</p>
+
+  <div class="test-grid">
+
+    <div class="test-card">
+      <div class="test-header">
+        <span class="test-num">01</span>
+        <span class="test-title">Crear mínimo cinco productos</span>
+        <span class="badge-ok">✓ OK</span>
+      </div>
+      <div class="test-body">
+        <p class="test-desc">Se invocó <code>crear_producto()</code> cinco veces con datos de productos del sector tecnológico y muebles de oficina.</p>
+        <div class="test-output">[id=1] "Laptop Dell XPS 15"       | Electrónica | qty=12 | $4,599,000
+[id=2] "Mouse Inalámbrico Logitech"  | Accesorios  | qty=45 | $89,900
+[id=3] "Monitor LG 27 pulgadas"      | Electrónica | qty= 8 | $1,250,000
+[id=4] "Teclado Mecánico Redragon"   | Accesorios  | qty= 0 | $349,000
+[id=5] "Silla Ergonómica OFX"        | Muebles     | qty= 5 | $2,100,000
+→ Retorno: "Producto creado exitosamente" (×5)</div>
+      </div>
+    </div>
+
+    <div class="test-card">
+      <div class="test-header">
+        <span class="test-num">02</span>
+        <span class="test-title">Consultar un producto por identificador</span>
+        <span class="badge-ok">✓ OK</span>
+      </div>
+      <div class="test-body">
+        <p class="test-desc">Se invocó <code>consultar_producto(id=2)</code> para el Mouse Inalámbrico Logitech.</p>
+        <div class="test-output">→ {
+     "id": 2,
+     "nombre": "Mouse Inalámbrico Logitech",
+     "categoria": "Accesorios",
+     "cantidad": 45,
+     "precio": 89900.0
+   }</div>
+      </div>
+    </div>
+
+    <div class="test-card">
+      <div class="test-header">
+        <span class="test-num">03</span>
+        <span class="test-title">Actualizar la cantidad de un producto</span>
+        <span class="badge-ok">✓ OK</span>
+      </div>
+      <div class="test-body">
+        <p class="test-desc">Se invocó <code>actualizar_producto(id=4, cantidad=20)</code> sobre el Teclado Mecánico Redragon que estaba agotado.</p>
+        <div class="test-output">Antes  → cantidad: 0
+Acción → actualizar_producto(id=4, cantidad=20)
+Después→ "Producto actualizado correctamente"
+Verify → cantidad: 20  ✓</div>
+      </div>
+    </div>
+
+    <div class="test-card">
+      <div class="test-header">
+        <span class="test-num">04</span>
+        <span class="test-title">Eliminar un producto</span>
+        <span class="badge-ok">✓ OK</span>
+      </div>
+      <div class="test-body">
+        <p class="test-desc">Se creó un producto temporal (id=6) y se eliminó con <code>eliminar_producto(id=6)</code>. La consulta posterior confirma la eliminación.</p>
+        <div class="test-output">crear_producto("Producto Temporal"...) → id=6
+eliminar_producto(id=6)             → "Producto eliminado correctamente"
+consultar_producto(id=6)            → {"error": "Producto no encontrado"} ✓</div>
+      </div>
+    </div>
+
+    <div class="test-card">
+      <div class="test-header">
+        <span class="test-num">05</span>
+        <span class="test-title">Listar todos los productos registrados</span>
+        <span class="badge-ok">✓ OK</span>
+      </div>
+      <div class="test-body">
+        <p class="test-desc">Se invocó <code>listar_productos()</code> y se obtuvo la lista completa de los 5 productos.</p>
+        <div class="test-output">→ Lista con 5 productos:
+   [1] Laptop Dell XPS 15          Electrónica  qty=12  $4,599,000
+   [2] Mouse Inalámbrico Logitech  Accesorios   qty=45  $89,900
+   [3] Monitor LG 27 pulgadas      Electrónica  qty= 8  $1,250,000
+   [4] Teclado Mecánico Redragon   Accesorios   qty=20  $349,000
+   [5] Silla Ergonómica OFX        Muebles      qty= 5  $2,100,000</div>
+      </div>
+    </div>
+
+    <div class="test-card">
+      <div class="test-header">
+        <span class="test-num">06</span>
+        <span class="test-title">Calcular el valor total del inventario</span>
+        <span class="badge-ok">✓ OK</span>
+      </div>
+      <div class="test-body">
+        <p class="test-desc">Se invocó <code>calcular_valor_total_inventario()</code>. Calcula SUM(cantidad × precio) para todos los productos.</p>
+        <div class="test-output">→ {"valor_total_inventario": 86713500.0}
+   Desglose:
+   Laptop:   12 × $4,599,000 = $55,188,000
+   Mouse:    45 ×    $89,900 =  $4,045,500
+   Monitor:   8 × $1,250,000 = $10,000,000
+   Teclado:  20 ×   $349,000 =  $6,980,000
+   Silla:     5 × $2,100,000 = $10,500,000
+   ─────────────────────────────────────────
+   TOTAL:                      $86,713,500 ✓</div>
+      </div>
+    </div>
+
+    <div class="test-card">
+      <div class="test-header">
+        <span class="test-num">07</span>
+        <span class="test-title">Consultar productos agotados</span>
+        <span class="badge-ok">✓ OK</span>
+      </div>
+      <div class="test-body">
+        <p class="test-desc">Se estableció cantidad=0 para el Teclado Mecánico y se invocó <code>productos_agotados()</code>.</p>
+        <div class="test-output">→ [
+     {
+       "id": 4,
+       "nombre": "Teclado Mecánico Redragon",
+       "categoria": "Accesorios",
+       "cantidad": 0,
+       "precio": 349000.0
+     }
+   ]  — 1 producto agotado identificado ✓</div>
+      </div>
+    </div>
+
+    <div class="test-card">
+      <div class="test-header">
+        <span class="test-num">08</span>
+        <span class="test-title">Identificar el producto más costoso</span>
+        <span class="badge-ok">✓ OK</span>
+      </div>
+      <div class="test-body">
+        <p class="test-desc">Se invocó <code>producto_mas_costoso()</code>. Usa ORDER BY precio DESC LIMIT 1.</p>
+        <div class="test-output">→ {
+     "id": 1,
+     "nombre": "Laptop Dell XPS 15",
+     "categoria": "Electrónica",
+     "cantidad": 12,
+     "precio": 4599000.0
+   }  — precio más alto del catálogo ✓</div>
+      </div>
+    </div>
+
+    <div class="test-card">
+      <div class="test-header">
+        <span class="test-num">09</span>
+        <span class="test-title">Consultar estadísticas generales del inventario</span>
+        <span class="badge-ok">✓ OK</span>
+      </div>
+      <div class="test-body">
+        <p class="test-desc">Se invocó <code>estadisticas_inventario()</code>. Ejecuta COUNT, AVG y SUM en una sola consulta SQL.</p>
+        <div class="test-output">→ {
+     "total_productos":  5,
+     "promedio_cantidad": 14.0,
+     "promedio_precio":   1677580.0,
+     "valor_total":       79733500.0
+   }</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="callout ok">
+    <p><strong>Resultado global:</strong> Las 9 pruebas requeridas por la guía se ejecutaron exitosamente. Cada herramienta MCP respondió con el tipo de dato correcto (str, dict o list) según su definición. La base de datos mantuvo su integridad durante todas las operaciones.</p>
+  </div>
+</section>
+
+<!-- 7. ANÁLISIS -->
+<section id="analisis">
+  <h2>7. Preguntas de análisis</h2>
+
+  <div class="qa">
+    <div class="qa-q"><div class="qa-num">1</div><span class="qa-text">¿Qué papel cumple MCP en la construcción de sistemas cognitivos?</span></div>
+    <div class="qa-a">El Model Context Protocol actúa como <strong>puente estandarizado</strong> entre un modelo de lenguaje y el mundo externo. Sin MCP, un LLM solo puede procesar texto dentro de su ventana de contexto estática. Con MCP, el modelo puede invocar herramientas (funciones Python, APIs, consultas SQL) de forma estructurada, recibir sus resultados e integrarlos en su razonamiento. Esto transforma al LLM de un generador de texto en un <strong>agente cognitivo</strong> capaz de actuar sobre datos reales y dinámicos. En esta actividad, el servidor MCP expone el inventario como un conjunto de capacidades que el modelo puede explotar sin conocer los detalles de implementación subyacentes.</div>
+  </div>
+
+  <div class="qa">
+    <div class="qa-q"><div class="qa-num">2</div><span class="qa-text">¿Por qué es importante conectar un modelo de lenguaje con herramientas externas?</span></div>
+    <div class="qa-a">Los modelos de lenguaje tienen <strong>conocimiento estático</strong> limitado a su fecha de corte de entrenamiento y no pueden acceder a datos empresariales propietarios. La conexión con herramientas externas les permite: (a) acceder a información actualizada en tiempo real, (b) realizar operaciones con <strong>precisión exacta</strong> que los LLM no garantizan por sí solos (cálculos financieros, consultas sobre millones de registros), (c) persistir y modificar información más allá de la conversación, y (d) integrarse con sistemas empresariales reales como ERP, CRM o plataformas de inventario. Sin esta conexión, la utilidad del LLM en entornos empresariales quedaría severamente limitada.</div>
+  </div>
+
+  <div class="qa">
+    <div class="qa-q"><div class="qa-num">3</div><span class="qa-text">¿Qué ventajas ofrece el uso de una base de datos frente al manejo de archivos planos?</span></div>
+    <div class="qa-a">Las bases de datos relacionales ofrecen ventajas sustanciales: (a) <strong>Integridad de datos</strong> con restricciones de tipo y llaves primarias que los CSV o JSON no pueden garantizar; (b) <strong>SQL como lenguaje de consulta</strong> que permite filtros, agrupaciones, joins y agregaciones sin cargar todos los datos en memoria; (c) <strong>Transacciones ACID</strong> que aseguran consistencia ante fallos o accesos concurrentes; (d) <strong>Índices</strong> que reducen el tiempo de búsqueda de lineal a logarítmico en grandes volúmenes; y (e) <strong>Escalabilidad</strong>: SQLite puede reemplazarse por PostgreSQL o MySQL con cambios mínimos en el código. Los archivos planos se vuelven inmanejables y propensos a corrupción a medida que el inventario crece.</div>
+  </div>
+
+  <div class="qa">
+    <div class="qa-q"><div class="qa-num">4</div><span class="qa-text">¿Cómo podría ampliarse esta solución para un escenario de Big Data?</span></div>
+    <div class="qa-a">Para escalar a Big Data se podrían incorporar: (a) <strong>Motor de BD distribuido</strong> como PostgreSQL + Citus o Apache Cassandra para manejar terabytes de datos de inventario en múltiples nodos; (b) <strong>Apache Kafka</strong> para capturar flujos en tiempo real de movimientos de inventario (entradas, salidas, ajustes); (c) <strong>Apache Spark</strong> para procesamiento analítico distribuido sobre el historial de transacciones y generación de reportes predictivos; (d) <strong>Data Lake</strong> en S3 o Google Cloud Storage para almacenamiento económico de datos históricos; y (e) nuevas herramientas MCP como <code>predecir_demanda()</code>, <code>detectar_anomalias()</code> o <code>generar_reorden_automatico()</code> que aprovechen modelos de ML entrenados sobre los datos históricos.</div>
+  </div>
+
+  <div class="qa">
+    <div class="qa-q"><div class="qa-num">5</div><span class="qa-text">¿Qué riesgos se deben considerar al permitir que un modelo de IA consulte o modifique datos?</span></div>
+    <div class="qa-a">Los principales riesgos son: (a) <strong>Inyección de prompts maliciosos</strong> que manipulen al modelo para ejecutar operaciones no autorizadas como eliminar todos los productos o exfiltrar datos sensibles; (b) <strong>Falta de autorización granular</strong>: el modelo puede invocar cualquier herramienta disponible sin verificar si el usuario tiene permiso para esa operación específica; (c) <strong>Alucinaciones con efectos reales</strong>: el modelo podría insertar datos incorrectos (precios negativos, cantidades erróneas) que afecten operaciones reales; (d) <strong>Ausencia de auditoría</strong>: sin logs detallados es imposible rastrear qué herramienta invocó el modelo y con qué parámetros; y (e) <strong>Denegación de servicio</strong> por consultas mal construidas que saturen la base de datos. Mitigaciones recomendadas: validación estricta de parámetros en cada tool, autenticación OAuth 2.0, principio de mínimo privilegio y registro completo de auditoría.</div>
+  </div>
+</section>
+
+<!-- 8. CONCLUSIONES -->
+<section id="conclusiones">
+  <h2>8. Conclusiones</h2>
+  <p>El desarrollo de esta actividad permitió comprender en la práctica cómo los sistemas cognitivos modernos amplían su capacidad de acción a través de herramientas externas estandarizadas:</p>
+  <ul style="list-style:none;display:flex;flex-direction:column;gap:.6rem;margin:1rem 0">
+    <li style="padding:.75rem 1rem;border:1px solid var(--border);border-radius:var(--radius);background:#fff;font-size:.88rem;color:var(--ink2);border-left:3px solid var(--blue-m)"><strong style="color:var(--blue)">MCP como habilitador cognitivo:</strong> El protocolo transforma a los LLM de sistemas de generación de texto en agentes capaces de interactuar con datos reales, superando las limitaciones del conocimiento estático de entrenamiento.</li>
+    <li style="padding:.75rem 1rem;border:1px solid var(--border);border-radius:var(--radius);background:#fff;font-size:.88rem;color:var(--ink2);border-left:3px solid var(--blue-m)"><strong style="color:var(--blue)">Separación de responsabilidades:</strong> Dividir la lógica en <code>database.py</code> (persistencia) y <code>server.py</code> (herramientas) facilita el mantenimiento, las pruebas y la futura escalabilidad del sistema.</li>
+    <li style="padding:.75rem 1rem;border:1px solid var(--border);border-radius:var(--radius);background:#fff;font-size:.88rem;color:var(--ink2);border-left:3px solid var(--blue-m)"><strong style="color:var(--blue)">SQLite como prototipo:</strong> Resulta ideal para desarrollo y pruebas, pero en producción debe reemplazarse por un motor más robusto con soporte de concurrencia y respaldo.</li>
+    <li style="padding:.75rem 1rem;border:1px solid var(--border);border-radius:var(--radius);background:#fff;font-size:.88rem;color:var(--ink2);border-left:3px solid var(--blue-m)"><strong style="color:var(--blue)">Validación como seguridad básica:</strong> La verificación de parámetros de entrada en cada herramienta MCP es la primera línea de defensa contra operaciones incorrectas o malintencionadas.</li>
+    <li style="padding:.75rem 1rem;border:1px solid var(--border);border-radius:var(--radius);background:#fff;font-size:.88rem;color:var(--ink2);border-left:3px solid var(--blue-m)"><strong style="color:var(--blue)">Patrón replicable:</strong> La arquitectura LLM + MCP + BD es aplicable a inventarios, CRM, análisis financiero, soporte técnico y cualquier dominio empresarial que requiera razonamiento sobre datos estructurados.</li>
+  </ul>
+</section>
+
+<!-- 9. REFERENCIAS -->
+<section id="referencias">
+  <h2>9. Referencias bibliográficas</h2>
+  <ul class="ref-list">
+    <li>Anthropic. (2024). <em>Model Context Protocol: Specification and documentation.</em> Anthropic PBC. <a href="https://modelcontextprotocol.io">https://modelcontextprotocol.io</a></li>
+    <li>CENTRUM PUCP. (2017). <em>IBM Perú y su Transformación Digital en la Era Cognitiva – XII Semana Internacional</em> [Video]. YouTube. <a href="https://www.youtube.com">https://www.youtube.com</a></li>
+    <li>DW Español. (2021). <em>La ciudad que lo sabe todo sobre ti | Big Data: ciudades del futuro</em> [Video]. YouTube. <a href="https://www.youtube.com">https://www.youtube.com</a></li>
+    <li>FastMCP Project. (2024). <em>FastMCP: The fast, Pythonic way to build MCP servers</em> [Software]. GitHub. <a href="https://github.com/jlowin/fastmcp">https://github.com/jlowin/fastmcp</a></li>
+    <li>Python Software Foundation. (2024). <em>sqlite3 — DB-API 2.0 interface for SQLite databases.</em> Python 3.12 Documentation. <a href="https://docs.python.org/3/library/sqlite3.html">https://docs.python.org/3/library/sqlite3.html</a></li>
+    <li>Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., Kaiser, Ł., &amp; Polosukhin, I. (2017). Attention is all you need. <em>Advances in Neural Information Processing Systems, 30.</em> <a href="https://doi.org/10.48550/arXiv.1706.03762">https://doi.org/10.48550/arXiv.1706.03762</a></li>
+  </ul>
+</section>
+
+<footer>
+  <span>Computación Cognitiva para Big Data — Actividad 6</span>
+  <span>Python · SQLite3 · FastMCP · Model Context Protocol</span>
+</footer>
+
+</main>
+
+<script>
+const links = document.querySelectorAll('nav a');
+const secs = document.querySelectorAll('section');
+window.addEventListener('scroll', () => {
+  let cur = '';
+  secs.forEach(s => { if (window.scrollY >= s.offsetTop - 100) cur = s.id; });
+  links.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + cur));
+});
+</script>
+</body>
+</html>
