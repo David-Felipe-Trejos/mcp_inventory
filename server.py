@@ -288,4 +288,4 @@ def estadisticas_inventario() -> dict:
 # ──────────────────────────────────────────────
 
 if __name__ == "__main__":
-    mcp.serve()
+    mcp.run()
